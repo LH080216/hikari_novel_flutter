@@ -1,0 +1,72 @@
+name: Create Release and Upload APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release Version (e.g., v0.5.0)'
+        required: true
+        default: 'v0.5.0'
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.7'
+          channel: 'stable'
+
+      - name: Build APK
+        run: flutter build apk --release
+
+      - name: Create Release
+        uses: actions/create-release@v1
+        id: create_release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.event.inputs.version }}
+          release_name: Release ${{ github.event.inputs.version }}
+          body: |
+            ## 📱 Release ${{ github.event.inputs.version }}
+            
+            首次通过 GitHub Actions 自动化构建的版本。
+            
+            ### 功能特性
+            - ✅ GitHub Actions CI/CD 配置
+            - ✅ 自动编译 Android APK
+            - ✅ 支持多平台构建
+            - ✅ 自动发布流程
+            
+            ### 下载安装
+            1. 下载 app-release.apk
+            2. 转移到 Android 设备
+            3. 打开文件管理器，点击 APK 安装
+            4. 授予必要权限
+            
+            ### 项目文档
+            - [使用指南](https://github.com/LH080216/hikari_novel_flutter/blob/main/GITHUB_ACTIONS_GUIDE.md)
+            - [CI/CD 总结](https://github.com/LH080216/hikari_novel_flutter/blob/main/CI_CD_PROJECT_SUMMARY.md)
+            - [完成报告](https://github.com/LH080216/hikari_novel_flutter/blob/main/PROJECT_COMPLETION_SUMMARY.md)
+          draft: false
+          prerelease: true
+
+      - name: Upload APK to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build/app/outputs/flutter-apk/app-release.apk
+          asset_name: app-release.apk
+          asset_content_type: application/vnd.android.package-archive
+
+      - name: Release Created
+        run: |
+          echo "✅ Release ${{ github.event.inputs.version }} created successfully!"
+          echo "📍 URL: https://github.com/LH080216/hikari_novel_flutter/releases/tag/${{ github.event.inputs.version }}"
